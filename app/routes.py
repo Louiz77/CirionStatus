@@ -2,6 +2,7 @@ from flask import Blueprint, jsonify
 from app.services.process_file import process_backup_file
 import pandas as pd
 from app.controllers.email_controller import check_email
+from datetime import datetime
 
 bp = Blueprint('backup', __name__)
 
@@ -16,6 +17,8 @@ def get_backup_status():
         result = process_backup_file()
 
         if "error" in result:
+            with open("report.log", "a") as my_file:
+                my_file.write(f"-{datetime.now()} | Error: {result}\n")
             return jsonify({"error": result["error"]}), 400
 
         # Substituir NaN, -inf e inf nos detalhes
