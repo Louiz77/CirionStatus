@@ -3,6 +3,7 @@ import os
 from msal import ConfidentialClientApplication
 from ..config import Config
 import base64
+from datetime import datetime
 
 class EmailService:
     def __init__(self):
@@ -38,7 +39,9 @@ class EmailService:
 
             if response.status_code == 200:
                 emails = response.json().get("value", [])
-                print(f"Total de emails retornados: {len(emails)}")
+                with open("report.log", "a") as my_file:
+                    my_file.write(f"-{datetime.now()} | Emails: {emails}\n")
+                    print(f"Total de emails retornados: {len(emails)}")
 
                 # Filtrar emails pelo remetente
                 filtered_emails = [
@@ -46,13 +49,20 @@ class EmailService:
                     if email.get("from", {}).get("emailAddress", {}).get("address") == "operacaobkp@ciriontechnologies.com"
                 ]
                 print(f"Total de emails do remetente operacaobkp@ciriontechnologies.com: {len(filtered_emails)}")
+                with open("report.log", "a") as my_file:
+                    my_file.write(f"-{datetime.now()} | Emails filtrados: {filtered_emails}\n")
+                    print(f"Total de emails retornados: {len(emails)}")
                 return filtered_emails
 
             else:
+                with open("report.log", "a") as my_file:
+                    my_file.write(f"-{datetime.now()} | Erro ao buscar emails: {response.status_code}, {response.text}\n")
                 print(f"Erro ao buscar emails: {response.status_code}, {response.text}")
                 return []
 
         except Exception as e:
+            with open("report.log", "a") as my_file:
+                my_file.write(f"-{datetime.now()} | Erro ao buscar emails: {e}\n")
             print(f"Erro ao buscar emails: {e}")
             raise
 
