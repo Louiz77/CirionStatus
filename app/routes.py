@@ -1,9 +1,14 @@
-from flask import Blueprint, jsonify
+from flask import Blueprint, jsonify, send_file
 from app.services.process_file import process_backup_file
 import pandas as pd
 from app.controllers.email_controller import check_email
+from app.controllers.pdf_controller import generate_pdf
 
 bp = Blueprint('backup', __name__)
+
+@bp.route('/backup/report', methods=['GET'])
+def get_report():
+    return generate_pdf()
 
 @bp.route('/backup/check', methods=['GET'])
 def fetch_email():

@@ -4,6 +4,7 @@ from msal import ConfidentialClientApplication
 from ..config import Config
 import base64
 
+
 class EmailService:
     def __init__(self):
         self.client = ConfidentialClientApplication(
@@ -24,16 +25,19 @@ class EmailService:
             print(e)
             raise Exception("Erro ao obter token de acesso.")
 
-    def fetch_emails_from_sender(self):
+    def fetch_emails(self):
         """
-        Busca emails na caixa de entrada e filtra pelo remetente manualmente.
+        Busca os últimos emails na caixa de entrada e filtra pelo remetente manualmente.
         """
         try:
             token = self.get_access_token()
             headers = {"Authorization": f"Bearer {token}"}
 
             # Solicita os emails ordenados por data
-            url = f"{Config.BASE_URL}/users/{Config.EMAIL_ADDRESS}/messages?$orderby=receivedDateTime desc"
+            url = (
+                f"{Config.BASE_URL}/users/{Config.EMAIL_ADDRESS}/messages?"
+                f"$orderby=receivedDateTime desc&$top=50"
+            )
             response = requests.get(url, headers=headers)
 
             if response.status_code == 200:
@@ -50,7 +54,7 @@ class EmailService:
 
             else:
                 print(f"Erro ao buscar emails: {response.status_code}, {response.text}")
-                return []
+                raise Exception(f"Erro ao buscar emails: {response.status_code}")
 
         except Exception as e:
             print(f"Erro ao buscar emails: {e}")
@@ -103,11 +107,11 @@ class EmailService:
         Busca emails do remetente específico e baixa os anexos.
         """
         try:
-            emails = self.fetch_emails_from_sender()
+            emails = self.fetch_emails()
 
             if not emails:
-                print(f"Nenhum email encontrado do remetente")
-                return {"message": f"Nenhum email encontrado"}
+                print("Nenhum email encontrado do remetente operacaobkp@ciriontechnologies.com.")
+                return {"message": "Nenhum email encontrado do remetente operacaobkp@ciriontechnologies.com."}
 
             # Itera pelos emails e faz o download dos anexos
             for email in emails:

@@ -1,6 +1,40 @@
 import pandas as pd
 import os
 import csv
+import re
+from datetime import datetime
+
+def get_latest_file(folder):
+    """
+    Retorna o arquivo mais recente na pasta, com base na data extraída do nome do arquivo.
+    """
+    try:
+        # Listar todos os arquivos CSV no diretório
+        files = [f for f in os.listdir(folder) if f.endswith('.CSV')]
+        
+        if not files:
+            return {"error": "Nenhum arquivo de backup encontrado"}
+
+        def extract_date_from_filename(filename):
+            """
+            Extrai a data do nome do arquivo no formato OpsCenter_ITFACIL_-_Resultado_Analitico_de_Backup_DD_MM_YYYY_...
+            """
+            match = re.search(r'(\d{2}_\d{2}_\d{4})', filename)
+            if match:
+                return datetime.strptime(match.group(1), "%d_%m_%Y")
+            return None
+
+        # Ordenar arquivos pela data extraída
+        files.sort(
+            key=lambda f: extract_date_from_filename(f),
+            reverse=True  # Ordem decrescente
+        )
+
+        latest_file = os.path.join(folder, files[0])
+        return latest_file
+
+    except Exception as e:
+        return {"error": f"Erro ao obter o último arquivo: {str(e)}"}
 
 def process_backup_file():
     folder = './data'
@@ -9,7 +43,7 @@ def process_backup_file():
     if not files:
         return {"error": "Nenhum arquivo de backup encontrado"}
 
-    latest_file = os.path.join(folder, files[0])
+    latest_file = get_latest_file(folder)
     print(f"Processando arquivo: {latest_file}")
 
     try:
