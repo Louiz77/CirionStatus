@@ -28,7 +28,7 @@ def get_backup_status():
             for key, value in record.items():
                 if pd.isna(value) or value in [float('inf'), float('-inf')]:
                     record[key] = None
-        print(result)
+
         return jsonify(result)
     except Exception as e:
         return jsonify({"error": f"Erro ao processar o backup: {str(e)}"}), 500

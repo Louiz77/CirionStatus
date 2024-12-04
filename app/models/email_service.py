@@ -3,6 +3,7 @@ import os
 from msal import ConfidentialClientApplication
 from ..config import Config
 import base64
+from app.services.registrar_log import logger
 
 
 class EmailService:
@@ -17,12 +18,13 @@ class EmailService:
         try:
             result = self.client.acquire_token_for_client(scopes=["https://graph.microsoft.com/.default"])
             if "access_token" in result:
-                print("Token de acesso obtido com sucesso.")
+                logger("Token de acesso obtido com sucesso.")
                 return result["access_token"]
             else:
+                logger(f"Erro ao obter token: {result.get('error_description', 'Erro desconhecido')}")
                 raise Exception(f"Erro ao obter token: {result.get('error_description', 'Erro desconhecido')}")
         except Exception as e:
-            print(e)
+            logger(f"Erro ao obter token de acesso. - {e}")
             raise Exception("Erro ao obter token de acesso.")
 
     def fetch_emails(self):
@@ -42,22 +44,22 @@ class EmailService:
 
             if response.status_code == 200:
                 emails = response.json().get("value", [])
-                print(f"Total de emails retornados: {len(emails)}")
+                logger(f"Total de emails retornados: {len(emails)}")
 
                 # Filtrar emails pelo remetente
                 filtered_emails = [
                     email for email in emails
                     if email.get("from", {}).get("emailAddress", {}).get("address") == "operacaobkp@ciriontechnologies.com"
                 ]
-                print(f"Total de emails do remetente operacaobkp@ciriontechnologies.com: {len(filtered_emails)}")
+                logger(f"Total de emails do remetente operacaobkp@ciriontechnologies.com: {len(filtered_emails)}")
                 return filtered_emails
 
             else:
-                print(f"Erro ao buscar emails: {response.status_code}, {response.text}")
+                logger(f"Erro ao buscar emails: {response.status_code}, {response.text}")
                 raise Exception(f"Erro ao buscar emails: {response.status_code}")
 
         except Exception as e:
-            print(f"Erro ao buscar emails: {e}")
+            logger(f"Erro ao buscar emails: {e}")
             raise
 
     def download_attachments_from_email(self, message_id):
@@ -91,15 +93,15 @@ class EmailService:
                         with open(file_path, "wb") as f:
                             f.write(decoded_content)
 
-                        print(f"Arquivo salvo em: {file_path}")
+                        logger(f"Arquivo salvo em: {file_path}")
                         return file_path
 
             else:
-                print(f"Erro ao baixar anexos: {response.status_code}, {response.text}")
+                logger(f"Erro ao baixar anexos: {response.status_code}, {response.text}")
                 raise Exception("Erro ao baixar anexos.")
 
         except Exception as e:
-            print(f"Erro ao processar anexo: {e}")
+            logger(f"Erro ao processar anexo: {e}")
             raise Exception("Erro ao baixar e salvar o anexo.")
 
     def process_emails(self):
@@ -110,19 +112,18 @@ class EmailService:
             emails = self.fetch_emails()
 
             if not emails:
-                print("Nenhum email encontrado do remetente operacaobkp@ciriontechnologies.com.")
+                logger("Nenhum email encontrado do remetente operacaobkp@ciriontechnologies.com.")
                 return {"message": "Nenhum email encontrado do remetente operacaobkp@ciriontechnologies.com."}
 
             # Itera pelos emails e faz o download dos anexos
             for email in emails:
-                print(f"Processando email: {email.get('subject')} - ID: {email['id']}")
+                logger(f"Processando email: {email.get('subject')} - ID: {email['id']}")
                 attachment_path = self.download_attachments_from_email(email["id"])
                 if attachment_path:
-                    print(f"Anexo salvo em: {attachment_path}")
                     return {"message": f"Anexo salvo em {attachment_path}"}
 
             return {"message": "Nenhum anexo encontrado para download."}
 
         except Exception as e:
-            print(f"Erro ao processar emails: {e}")
+            logger(f"Erro ao processar emails: {e}")
             return {"error": f"Erro ao processar emails: {e}"}

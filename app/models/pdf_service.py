@@ -2,10 +2,12 @@ import os
 import pandas as pd
 from fpdf import FPDF
 from datetime import datetime
-
+from app.services.chart_service import ChartService
+from app.services.registrar_log import logger
 class BackupReportGenerator:
     def __init__(self, data_folder):
         self.data_folder = data_folder
+        self.chart_service = ChartService()
 
     def get_latest_files(self, n=5):
         """
@@ -23,10 +25,9 @@ class BackupReportGenerator:
             parts = filename.split('_')
             date_part = '_'.join(parts[7:-6])  # Extrai a data
             file_date = datetime.strptime(date_part, "%d_%m_%Y")
-            print(file_date, "Success")
             return file_date
         except Exception as e:
-            print(f"Erro ao extrair a data do arquivo {filename}: {e}")
+            logger(f"Erro ao extrair a data do arquivo {filename}: {e}")
             return None
 
     def load_csv_data(self, file_path, file_date):
@@ -47,7 +48,7 @@ class BackupReportGenerator:
                 ]
             )
             df['Data de Geração'] = file_date
-            print("Processado!")
+            logger(f"{file_path} Arquivo Processado!")
             status_count = df["Status do Backup"].value_counts().to_dict()
             summary = {
                 "Successful": status_count.get('Successful', 0),
@@ -55,10 +56,9 @@ class BackupReportGenerator:
                 "Partially": status_count.get('Partially Successful', 0)
 
             }
-            print(summary)
             return df
         except Exception as e:
-            print(f"Erro ao processar {file_path}: {e}")
+            logger(f"Erro ao processar {file_path}: {e}")
             return pd.DataFrame()
 
     def generate_summary(self, dataframes):
@@ -80,15 +80,15 @@ class BackupReportGenerator:
         """
         Gera um relatório PDF a partir do resumo consolidado.
         """
-        data = datetime.now()
-        data_atual = datetime.strftime(data, "%d/%m/%Y")
+        data_atual = datetime.now().strftime("%d/%m/%Y")
 
         pdf = FPDF()
         pdf.set_auto_page_break(auto=True, margin=15)
         pdf.add_page()
-        pdf.set_font("Arial", size=12)
+        pdf.set_font("Arial", size=25)
 
         pdf.cell(200, 10, txt="Relatório de Status de Backup - Comparativo", ln=True, align="C")
+        pdf.set_font("Arial", size=12)
         pdf.ln(10)
 
         # Adicionar resumo geral
@@ -99,9 +99,25 @@ class BackupReportGenerator:
             pdf.cell(200, 10, txt=f"Backups Parciais: {row['Partially Successful']}", ln=True)
             pdf.ln(10)
 
-        pdf.cell(200, 10, txt=f"Relatório gerado em: {data_atual}", ln=True, align="L")
+            # Adicionar gráficos de barras diários
+            bar_chart_path = f"./charts/bar_chart_{row['Data']:%d_%m_%Y}.png"
+            if os.path.exists(bar_chart_path):
+                pdf.image(bar_chart_path, x=10, y=pdf.get_y(), w=190)
+                pdf.ln(60)
+            pdf.add_page()
 
+        # Adicionar gráfico comparativo geral
+        comparative_chart_path = "./charts/comparative_chart.png"
+        if os.path.exists(comparative_chart_path):
+            pdf.set_font("Arial", size=25)
+            pdf.cell(200, 10, txt="Comparativo Geral dos Backups", ln=True, align="C")
+            pdf.set_font("Arial", size=12)
+            pdf.image(comparative_chart_path, x=10, y=50, w=190)
+
+        pdf.add_page()
+        pdf.cell(200, 10, txt=f"Relatório gerado em: {data_atual}", ln=True, align="L")
         pdf.output(output_path)
+
         return output_path
 
     def process_and_generate_report(self, output_path):
@@ -110,7 +126,7 @@ class BackupReportGenerator:
         """
         files = self.get_latest_files()
         if not files:
-            print("Nenhum arquivo encontrado na pasta especificada.")
+            logger("Nenhum arquivo encontrado na pasta especificada.")
             return
 
         dataframes = []
@@ -123,8 +139,13 @@ class BackupReportGenerator:
                     dataframes.append(df)
 
         if not dataframes:
-            print("Nenhum dado válido encontrado para gerar o relatório.")
+            logger("Nenhum dado válido encontrado para gerar o relatório.")
             return
 
         summary_df = self.generate_summary(dataframes)
+
+        # Gera gráficos
+        self.chart_service.generate_bar_chart(summary_df)
+        self.chart_service.generate_comparative_chart(summary_df)
+
         self.generate_pdf_report(summary_df, output_path)

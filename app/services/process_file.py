@@ -3,6 +3,7 @@ import os
 import csv
 import re
 from datetime import datetime
+from app.services.registrar_log import logger
 
 def get_latest_file(folder):
     """
@@ -13,6 +14,7 @@ def get_latest_file(folder):
         files = [f for f in os.listdir(folder) if f.endswith('.CSV')]
         
         if not files:
+            logger("Nenhum arquivo de backup encontrado")
             return {"error": "Nenhum arquivo de backup encontrado"}
 
         def extract_date_from_filename(filename):
@@ -34,6 +36,7 @@ def get_latest_file(folder):
         return latest_file
 
     except Exception as e:
+        logger(f"Erro ao obter o ultimo arquivo - {e}")
         return {"error": f"Erro ao obter o último arquivo: {str(e)}"}
 
 def process_backup_file():
@@ -44,7 +47,7 @@ def process_backup_file():
         return {"error": "Nenhum arquivo de backup encontrado"}
 
     latest_file = get_latest_file(folder)
-    print(f"Processando arquivo: {latest_file}")
+    logger(f"Processando arquivo para o frontend: {latest_file}")
 
     try:
         # Detectar o delimitador automaticamente
@@ -52,7 +55,6 @@ def process_backup_file():
             sample = f.read(2048)
             sniffer = csv.Sniffer()
             delimiter = sniffer.sniff(sample).delimiter
-            print(f"Delimitador detectado: {delimiter}")
 
         # Carregar o arquivo ignorando as 4 primeiras linhas
         try:
@@ -69,7 +71,7 @@ def process_backup_file():
                 ]
             )
         except pd.errors.ParserError as e:
-            print(f"Erro ao processar o arquivo: {str(e)}")
+            logger(f"Erro ao processar o arquivo: {str(e)}")
             return {"error": "Arquivo contém linhas mal formatadas e não pôde ser processado completamente"}
 
         # Processar resumo (contagem de status)
@@ -88,8 +90,8 @@ def process_backup_file():
         for x in date_process:
             if "Report generated on" in x:
                 date = x
-        print(date)
         return {"summary": summary, "details": details, "date": date}
 
     except Exception as e:
+        logger(f"Erro ao processar o arquivo - {str(e)}")
         return {"error": f"Erro ao processar o arquivo: {str(e)}"}

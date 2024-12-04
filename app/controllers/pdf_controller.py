@@ -2,8 +2,11 @@ from flask import jsonify, send_file
 from app.models.pdf_service import BackupReportGenerator
 import os
 import uuid
+from app.services.registrar_log import logger
+
 def generate_pdf():
     try:
+        logger("Usuario requisitou RELATORIO PDF")
         id_user_uuid = str(uuid.uuid4())
         data_folder = os.path.abspath("./data")
         output_folder = os.path.abspath("./upload")

@@ -9,6 +9,7 @@ class Config:
     os.makedirs(UPLOAD_FOLDER, exist_ok=True)
     BASE_URL = "https://graph.microsoft.com/v1.0"
     DATA_FOLDER = "./data"
+    LOG_FOLDER = "./log"
 
     CLIENT_ID = os.getenv("CLIENT_ID")
     CLIENT_SECRET = os.getenv("CLIENT_SECRET")
