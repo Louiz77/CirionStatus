@@ -78,7 +78,7 @@ def process_backup_file():
         status_count = df["Status do Backup"].value_counts().to_dict()
         summary = {
             "Successful": status_count.get('Successful', 0),
-            "Error": status_count.get('Error', 0),
+            "Failed": status_count.get('Failed', 0),
             "Partially": status_count.get('Partially Successful', 0)
 
         }

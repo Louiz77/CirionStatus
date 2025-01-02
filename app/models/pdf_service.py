@@ -52,7 +52,7 @@ class BackupReportGenerator:
             status_count = df["Status do Backup"].value_counts().to_dict()
             summary = {
                 "Successful": status_count.get('Successful', 0),
-                "Error": status_count.get('Error', 0),
+                "Error": status_count.get('Failed', 0),
                 "Partially": status_count.get('Partially Successful', 0)
 
             }
@@ -70,7 +70,7 @@ class BackupReportGenerator:
             summary = {
                 "Data": df['Data de Geração'].iloc[0],
                 "Successful": (df['Status do Backup'] == 'Successful').sum(),
-                "Error": (df['Status do Backup'] == 'Error').sum(),
+                "Error": (df['Status do Backup'] == 'Failed').sum(),
                 "Partially Successful": (df['Status do Backup'] == 'Partially Successful').sum(),
             }
             summaries.append(summary)
